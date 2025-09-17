@@ -26,18 +26,18 @@ var upgrader = websocket.Upgrader{
 
 func Upgrade(w http.ResponseWriter, r *http.Request) (*websocket.Conn, error) {
 
-	ws, err := upgrader.Upgrade(w, r, nil)
+	conn, err := upgrader.Upgrade(w, r, nil)
 	if err != nil {
 		log.Println(err)
-		return ws, err
+		return nil, err
 	}
-	return ws, nil
+	return conn, nil
 }
 
 // define a reader which will listen for
 // new messages being sent to our WebSocket
 // endpoint
-func reader(conn *websocket.Conn) {
+func Reader(conn *websocket.Conn) {
 	for {
 		messageType, p, err := conn.ReadMessage()
 		if err != nil {

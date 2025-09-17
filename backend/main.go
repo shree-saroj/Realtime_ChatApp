@@ -4,33 +4,43 @@ import (
 	"fmt"
 	"net/http"
 
-	"github.com/gorilla/websocket"
+	"Realtime_ChatApp/pkg/websocket"
 )
 
 // define our WebSocket endpoint
-func serveWs(w http.ResponseWriter, r *http.Request) {
+func serveWs(pool *websocket.Pool, w http.ResponseWriter, r *http.Request) {
 	// upgrade this connection to a WebSocket
 	// connection
-	ws, err := websocket.Upgrade(w, r)
+	fmt.Println("WebSocket Endpoint Hit")
+	conn, err := websocket.Upgrade(w, r)
 	if err != nil {
 		fmt.Fprintf(w, "%+V\n", err)
 	}
 
+	client := &websocket.Client{
+		Conn: conn,
+		Pool: pool,
+	}
+
+	pool.Register <- client
+	client.Read()
+
 	// listen indefinitely for new messages coming
 	// through on our WebSocket connection
-	go websocket.Writer(ws)
-	reader(ws)
+	// go websocket.Writer(ws)
+	// websocket.Reader(ws)
 }
 
 func setupRoutes() {
-	http.HandleFunc("/", func(w http.ResponseWriter, r *http.Request) {
-		fmt.Fprintf(w, "Simple Server")
-	})
 	// map our `/ws` endpoint to the `serveWs` function
-	http.HandleFunc("/ws", serveWs)
+	pool := websocket.NewPool()
+	go pool.Start()
+	http.HandleFunc("/ws", func(w http.ResponseWriter, r *http.Request) {
+		serveWs(pool, w, r)
+	})
 }
 func main() {
-	fmt.Println("Chat App v0.01")
+	fmt.Println("Distributed Chat App v0.01")
 	setupRoutes()
 	http.ListenAndServe(":8080", nil)
 }
